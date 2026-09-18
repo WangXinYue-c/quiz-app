@@ -260,7 +260,7 @@ function loadQuizzes() {
         .then(res => res.json())
         .then(quizzes => {
             quizCount.textContent = `${quizzes.length} 套`;
-            
+
             if (quizzes.length === 0) {
                 quizList.innerHTML = `
                     <div class="empty-state">
@@ -270,20 +270,43 @@ function loadQuizzes() {
                 return;
             }
 
-            quizList.innerHTML = quizzes.map(q => `
-                <div class="quiz-item">
-                    <div class="quiz-item-info">
-                        <div class="quiz-item-title">${escapeHtml(q.title)}</div>
-                        <div class="quiz-item-meta">
-                            ${q.question_count} 道题 · ${q.create_time}
+            // 并行获取每套试卷的进度
+            const progressPromises = quizzes.map(q =>
+                fetch('/api/progress/' + q.id).then(res => res.json()).catch(() => null)
+            );
+
+            Promise.all(progressPromises).then(progresses => {
+                quizList.innerHTML = quizzes.map((q, i) => {
+                    const prog = progresses[i];
+                    const answeredCount = prog && prog.answered ? prog.answered.filter(a => a).length : 0;
+                    const hasProgress = answeredCount > 0 && answeredCount < q.question_count;
+                    const isComplete = answeredCount >= q.question_count && answeredCount > 0;
+
+                    let actionBtn;
+                    if (hasProgress) {
+                        actionBtn = `<button class="btn btn-primary btn-small" onclick="startQuiz('${q.id}')">继续答题 (${answeredCount}/${q.question_count})</button>`;
+                    } else if (isComplete) {
+                        actionBtn = `<button class="btn btn-primary btn-small" onclick="startQuiz('${q.id}')">重新答题</button>`;
+                    } else {
+                        actionBtn = `<button class="btn btn-primary btn-small" onclick="startQuiz('${q.id}')">开始答题</button>`;
+                    }
+
+                    return `
+                    <div class="quiz-item">
+                        <div class="quiz-item-info">
+                            <div class="quiz-item-title">${escapeHtml(q.title)}</div>
+                            <div class="quiz-item-meta">
+                                ${q.question_count} 道题 · ${q.create_time}
+                            </div>
+                        </div>
+                        <div class="quiz-item-actions">
+                            ${actionBtn}
+                            <button class="btn btn-secondary btn-small" onclick="deleteQuiz('${q.id}')">删除</button>
                         </div>
                     </div>
-                    <div class="quiz-item-actions">
-                        <button class="btn btn-primary btn-small" onclick="startQuiz('${q.id}')">开始答题</button>
-                        <button class="btn btn-secondary btn-small" onclick="deleteQuiz('${q.id}')">删除</button>
-                    </div>
-                </div>
-            `).join('');
+                    `;
+                }).join('');
+            });
         })
         .catch(err => {
             console.error('加载试卷列表失败:', err);

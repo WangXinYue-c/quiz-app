@@ -82,6 +82,16 @@ def init_db():
         answer_time TEXT NOT NULL
     )''')
 
+    # 答题进度表：记录每份试卷做到第几题
+    c.execute('''CREATE TABLE IF NOT EXISTS quiz_progress (
+        id TEXT PRIMARY KEY,
+        quiz_id TEXT NOT NULL UNIQUE,
+        current_index INTEGER DEFAULT 0,
+        answered_json TEXT DEFAULT '[]',
+        answers_json TEXT DEFAULT '[]',
+        updated_time TEXT NOT NULL
+    )''')
+
     # 配置表
     c.execute('''CREATE TABLE IF NOT EXISTS config (
         key TEXT PRIMARY KEY,
@@ -304,6 +314,11 @@ def quiz_page(quiz_id):
     """刷题页面"""
     return render_template('quiz.html', quiz_id=quiz_id)
 
+@app.route('/wrong')
+def wrong_page():
+    """错题集页面"""
+    return render_template('wrong.html')
+
 @app.route('/api/upload', methods=['POST'])
 def upload_file():
     """上传文件并解析"""
@@ -514,6 +529,70 @@ def record_answer():
     conn.close()
     
     return jsonify({'success': True})
+
+@app.route('/api/progress/<quiz_id>', methods=['GET', 'POST'])
+def quiz_progress(quiz_id):
+    """获取或保存答题进度"""
+    if request.method == 'GET':
+        conn = get_db()
+        row = conn.execute('SELECT * FROM quiz_progress WHERE quiz_id = ?', (quiz_id,)).fetchone()
+        conn.close()
+        if row:
+            return jsonify({
+                'current_index': row['current_index'],
+                'answered': json.loads(row['answered_json']),
+                'user_answers': json.loads(row['answers_json']),
+                'updated_time': row['updated_time']
+            })
+        return jsonify({'current_index': 0, 'answered': [], 'user_answers': []})
+    
+    # POST: 保存进度
+    data = request.json
+    conn = get_db()
+    conn.execute('''INSERT OR REPLACE INTO quiz_progress 
+        (id, quiz_id, current_index, answered_json, answers_json, updated_time)
+        VALUES (?, ?, ?, ?, ?, ?)''',
+        (generate_id(), quiz_id, data.get('current_index', 0),
+         json.dumps(data.get('answered', [])),
+         json.dumps(data.get('user_answers', [])),
+         now_str()))
+    conn.commit()
+    conn.close()
+    return jsonify({'success': True})
+
+@app.route('/api/wrong_questions')
+def wrong_questions():
+    """获取所有错题"""
+    conn = get_db()
+    # 每道题取最新一条答题记录
+    wrongs = conn.execute('''
+        SELECT ar.*, q.stem, q.options, q.answer, q.explanation, q.question_type,
+               q.question_index, qz.title as quiz_title
+        FROM answer_records ar
+        JOIN questions q ON ar.question_id = q.id
+        JOIN quizzes qz ON ar.quiz_id = qz.id
+        WHERE ar.is_correct = 0
+        GROUP BY ar.question_id
+        ORDER BY ar.answer_time DESC
+    ''').fetchall()
+    conn.close()
+    
+    result = []
+    for w in wrongs:
+        result.append({
+            'question_id': w['question_id'],
+            'quiz_id': w['quiz_id'],
+            'quiz_title': w['quiz_title'],
+            'question_index': w['question_index'],
+            'type': w['question_type'],
+            'stem': w['stem'],
+            'options': json.loads(w['options']),
+            'answer': w['answer'],
+            'explanation': w['explanation'],
+            'user_answer': w['user_answer'],
+            'answer_time': w['answer_time']
+        })
+    return jsonify(result)
 
 @app.route('/api/generate_explanation', methods=['POST'])
 def generate_explanation():

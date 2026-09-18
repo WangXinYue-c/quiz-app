@@ -775,6 +775,27 @@ body {
     background: #e8f4ff;
 }
 
+/* ========== 错题集入口 ========== */
+.wrong-entry-card {
+    background: linear-gradient(135deg, #fff5f5, #fff0f0);
+    border: 1px solid #ffcdd2;
+}
+
+.wrong-entry-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.wrong-entry-row h2 {
+    margin-bottom: 4px;
+}
+
+.wrong-entry-hint {
+    font-size: 13px;
+    color: #e57373;
+}
+
 /* ========== 响应式 ========== */
 @media (max-width: 600px) {
     .container {
