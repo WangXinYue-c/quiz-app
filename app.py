@@ -590,14 +590,17 @@ def ai_config():
     
     return jsonify({'success': True})
 
+# ========== 初始化数据库 ==========
+init_db()
+
 # ========== 启动 ==========
 if __name__ == '__main__':
-    init_db()
     api_key, _, _ = get_ai_config_full()
     print('=' * 50)
     print('  刷题神器 启动成功！')
-    print('  访问地址: http://localhost:5000')
+    port = int(os.environ.get('PORT', 5000))
+    print(f'  访问地址: http://localhost:{port}')
     if not api_key:
         print('  提示: 未配置AI，可在网页右上角"设置"按钮中配置')
     print('=' * 50)
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    app.run(debug=True, host='0.0.0.0', port=port)
