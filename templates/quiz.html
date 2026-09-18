@@ -12,14 +12,42 @@
         <header class="quiz-header">
             <button class="btn btn-back" onclick="window.location.href='/'">← 返回</button>
             <h1 class="quiz-title" id="quizTitle">加载中...</h1>
+            <button class="btn btn-secondary btn-small" id="gridBtn" title="题号导航">≡</button>
+        </header>
+
+        <!-- 模式切换 + 进度 -->
+        <div class="quiz-toolbar">
+            <div class="mode-switcher">
+                <button class="btn btn-small btn-primary mode-btn active" id="modeQuizBtn" data-mode="quiz">模拟模式</button>
+                <button class="btn btn-small btn-secondary mode-btn" id="modeStudyBtn" data-mode="study">背题模式</button>
+            </div>
             <div class="quiz-progress">
                 <span id="currentNum">0</span> / <span id="totalNum">0</span>
             </div>
-        </header>
+        </div>
 
         <!-- 进度条 -->
         <div class="quiz-progress-bar">
             <div class="quiz-progress-fill" id="progressFill"></div>
+        </div>
+
+        <!-- 题号网格弹窗 -->
+        <div class="modal-overlay" id="gridModal" style="display:none;">
+            <div class="modal-card" style="max-width:520px;text-align:left;">
+                <div class="modal-header">
+                    <h2>题号导航</h2>
+                    <button class="btn btn-back" id="closeGridBtn">✕</button>
+                </div>
+                <div style="padding:20px 24px;">
+                    <div class="grid-legend">
+                        <span class="grid-legend-item"><span class="grid-dot correct"></span> 正确</span>
+                        <span class="grid-legend-item"><span class="grid-dot wrong"></span> 错误</span>
+                        <span class="grid-legend-item"><span class="grid-dot unanswered"></span> 未做</span>
+                        <span class="grid-legend-item"><span class="grid-dot marked"></span> 标注</span>
+                    </div>
+                    <div class="question-grid" id="questionGrid"></div>
+                </div>
+            </div>
         </div>
 
         <!-- 题目区域 -->
@@ -27,6 +55,7 @@
             <div class="question-meta">
                 <span class="question-type" id="questionType">单选题</span>
                 <span class="question-number" id="questionNumber">第 1 题</span>
+                <button class="btn btn-small btn-mark" id="markBtn" title="标记此题">⚪</button>
             </div>
             
             <div class="question-stem" id="questionStem">
@@ -37,7 +66,15 @@
                 <!-- 选项动态生成 -->
             </div>
 
-            <!-- 答题结果反馈 -->
+            <!-- 背题模式：直接显示答案 -->
+            <div class="study-answer" id="studyAnswerSection" style="display:none;">
+                <div class="result-feedback correct" style="display:flex;">
+                    <div class="result-icon">✓</div>
+                    <div class="result-text" id="studyAnswerText">正确答案：A</div>
+                </div>
+            </div>
+
+            <!-- 答题结果反馈（模拟模式） -->
             <div class="result-feedback" id="resultFeedback" style="display:none;">
                 <div class="result-icon" id="resultIcon">✓</div>
                 <div class="result-text" id="resultText">回答正确！</div>
@@ -46,7 +83,7 @@
             <!-- 解析区域 -->
             <div class="explanation-section" id="explanationSection" style="display:none;">
                 <div class="explanation-header">
-                    <span>📝 答案解析</span>
+                    <span>解析</span>
                     <button class="btn btn-small" id="genExplanationBtn" style="display:none;">AI生成解析</button>
                 </div>
                 <div class="explanation-content" id="explanationContent">
@@ -84,7 +121,6 @@
     </div>
 
     <script>
-        // 将quiz_id传入JS
         window.QUIZ_ID = "{{ quiz_id }}";
     </script>
     <script src="/static/quiz.js"></script>

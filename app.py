@@ -89,6 +89,7 @@ def init_db():
         current_index INTEGER DEFAULT 0,
         answered_json TEXT DEFAULT '[]',
         answers_json TEXT DEFAULT '[]',
+        marked_json TEXT DEFAULT '[]',
         updated_time TEXT NOT NULL
     )''')
 
@@ -495,19 +496,52 @@ def delete_quiz(quiz_id):
     if not quiz:
         conn.close()
         return jsonify({'error': '试卷不存在'}), 404
-    
+
     # 删除题目
     conn.execute('DELETE FROM questions WHERE quiz_id = ?', (quiz_id,))
     # 删除答题记录
     conn.execute('DELETE FROM answer_records WHERE quiz_id = ?', (quiz_id,))
+    # 删除进度
+    conn.execute('DELETE FROM quiz_progress WHERE quiz_id = ?', (quiz_id,))
     # 删除试卷
     conn.execute('DELETE FROM quizzes WHERE id = ?', (quiz_id,))
-    
+
     # 如果有关联文件，更新文件状态
     if quiz['file_id']:
         conn.execute('UPDATE files SET quiz_id = NULL, status = ? WHERE id = ?',
                      ('done', quiz['file_id']))
-    
+
+    conn.commit()
+    conn.close()
+    return jsonify({'success': True})
+
+@app.route('/api/file/<file_id>/delete', methods=['POST'])
+def delete_file(file_id):
+    """删除上传文件记录"""
+    conn = get_db()
+    f = conn.execute('SELECT * FROM files WHERE id = ?', (file_id,)).fetchone()
+    if not f:
+        conn.close()
+        return jsonify({'error': '文件不存在'}), 404
+
+    # 如果有关联试卷，也删除
+    if f['quiz_id']:
+        conn.execute('DELETE FROM questions WHERE quiz_id = ?', (f['quiz_id'],))
+        conn.execute('DELETE FROM answer_records WHERE quiz_id = ?', (f['quiz_id'],))
+        conn.execute('DELETE FROM quiz_progress WHERE quiz_id = ?', (f['quiz_id'],))
+        conn.execute('DELETE FROM quizzes WHERE id = ?', (f['quiz_id'],))
+
+    # 删除物理文件
+    if f['file_type']:
+        safe_name = f"{file_id}.{f['file_type']}"
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], safe_name)
+        if os.path.exists(file_path):
+            try:
+                os.remove(file_path)
+            except:
+                pass
+
+    conn.execute('DELETE FROM files WHERE id = ?', (file_id,))
     conn.commit()
     conn.close()
     return jsonify({'success': True})
@@ -542,19 +576,21 @@ def quiz_progress(quiz_id):
                 'current_index': row['current_index'],
                 'answered': json.loads(row['answered_json']),
                 'user_answers': json.loads(row['answers_json']),
+                'marked': json.loads(row['marked_json']) if row['marked_json'] else [],
                 'updated_time': row['updated_time']
             })
-        return jsonify({'current_index': 0, 'answered': [], 'user_answers': []})
+        return jsonify({'current_index': 0, 'answered': [], 'user_answers': [], 'marked': []})
     
     # POST: 保存进度
     data = request.json
     conn = get_db()
-    conn.execute('''INSERT OR REPLACE INTO quiz_progress 
-        (id, quiz_id, current_index, answered_json, answers_json, updated_time)
-        VALUES (?, ?, ?, ?, ?, ?)''',
+    conn.execute('''INSERT OR REPLACE INTO quiz_progress
+        (id, quiz_id, current_index, answered_json, answers_json, marked_json, updated_time)
+        VALUES (?, ?, ?, ?, ?, ?, ?)''',
         (generate_id(), quiz_id, data.get('current_index', 0),
          json.dumps(data.get('answered', [])),
          json.dumps(data.get('user_answers', [])),
+         json.dumps(data.get('marked', [])),
          now_str()))
     conn.commit()
     conn.close()

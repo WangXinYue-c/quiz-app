@@ -335,12 +335,14 @@ function loadFiles() {
                     'error': { text: '失败', class: 'status-error' }
                 };
                 const status = statusMap[f.status] || { text: f.status, class: '' };
-                
+
                 let actionBtn = '';
                 if (f.status === 'done' && f.quiz_id) {
                     actionBtn = `<button class="btn btn-primary btn-small" onclick="startQuiz('${f.quiz_id}')">刷题</button>`;
                 }
-                
+                // 所有文件都加删除按钮
+                actionBtn += `<button class="btn btn-danger btn-small" onclick="deleteFile('${f.id}')" title="删除">删除</button>`;
+
                 return `
                     <div class="file-item">
                         <span class="file-item-name" title="${escapeHtml(f.filename)}">${escapeHtml(f.filename)}</span>
@@ -364,8 +366,29 @@ function startQuiz(quizId) {
 // 删除试卷
 function deleteQuiz(quizId) {
     if (!confirm('确定要删除这套试卷吗？删除后无法恢复。')) return;
-    
+
     fetch(`/api/quiz/${quizId}/delete`, {
+        method: 'POST'
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            loadQuizzes();
+            loadFiles();
+        } else {
+            alert('删除失败：' + (data.error || '未知错误'));
+        }
+    })
+    .catch(err => {
+        alert('删除失败：' + err.message);
+    });
+}
+
+// 删除文件
+function deleteFile(fileId) {
+    if (!confirm('确定要删除这个文件吗？关联的试卷也会一起删除。')) return;
+
+    fetch(`/api/file/${fileId}/delete`, {
         method: 'POST'
     })
     .then(res => res.json())
