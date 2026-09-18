@@ -225,11 +225,26 @@ function uploadFile() {
     progressContainer.style.display = 'block';
     progressText.textContent = '正在上传并解析，请稍候...';
 
-    fetch('/api/upload', {
-        method: 'POST',
-        body: formData
+    const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('请求超时（服务器响应超过5分钟，可能是免费版资源不足）')), 300000)
+    );
+
+    Promise.race([
+        fetch('/api/upload', {
+            method: 'POST',
+            body: formData
+        }),
+        timeoutPromise
+    ])
+    .then(res => {
+        const contentType = res.headers.get('content-type') || '';
+        if (!contentType.includes('application/json')) {
+            return res.text().then(text => {
+                throw new Error('服务器返回了非JSON响应（可能是内存不足导致崩溃），请稍后重试');
+            });
+        }
+        return res.json();
     })
-    .then(res => res.json())
     .then(data => {
         if (data.success) {
             progressText.textContent = `解析完成！共 ${data.question_count} 道题`;
@@ -237,7 +252,7 @@ function uploadFile() {
             uploadBtn.onclick = () => {
                 window.location.href = `/quiz/${data.quiz_id}`;
             };
-            
+
             // 刷新列表
             loadQuizzes();
             loadFiles();

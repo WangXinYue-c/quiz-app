@@ -152,6 +152,10 @@ def extract_text_from_pdf(filepath):
                 page_text = page.extract_text()
                 if page_text:
                     text += page_text + '\n'
+                # 限制总文本长度，避免内存溢出
+                if len(text) > 50000:
+                    text = text[:50000]
+                    break
         return text
     except ImportError:
         # 备用方案：用PyPDF2
@@ -161,6 +165,9 @@ def extract_text_from_pdf(filepath):
             text = ''
             for page in reader.pages:
                 text += page.extract_text() + '\n'
+                if len(text) > 50000:
+                    text = text[:50000]
+                    break
             return text
         except ImportError:
             raise Exception('未安装PDF解析库，请运行 pip install pdfplumber')
