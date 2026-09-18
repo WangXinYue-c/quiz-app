@@ -206,15 +206,15 @@ def extract_text(filepath, file_type):
         raise Exception(f'不支持的文件类型: {file_type}')
 
 # ========== AI题目结构化 ==========
-def call_ai(messages):
-    """调用AI接口"""
+def call_ai(messages, json_mode=True):
+    """调用AI接口。json_mode=True时强制返回JSON，False时返回纯文本"""
     api_key, base_url, model = get_ai_config_full()
-    
+
     if not api_key:
         raise Exception('未配置AI API Key，请点击右上角"设置"按钮配置')
-    
+
     import requests
-    
+
     url = f"{base_url.rstrip('/')}/chat/completions"
     headers = {
         'Content-Type': 'application/json',
@@ -223,10 +223,11 @@ def call_ai(messages):
     data = {
         'model': model,
         'messages': messages,
-        'temperature': 0.3,
-        'response_format': {'type': 'json_object'}
+        'temperature': 0.3
     }
-    
+    if json_mode:
+        data['response_format'] = {'type': 'json_object'}
+
     response = requests.post(url, headers=headers, json=data, timeout=120)
     if response.status_code != 200:
         try:
@@ -663,7 +664,7 @@ def generate_explanation():
         
         result = call_ai([
             {'role': 'user', 'content': prompt}
-        ])
+        ], json_mode=False)
         
         # 保存解析到数据库
         conn = get_db()
