@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>刷题 - 刷题神器</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container quiz-container">
+        <!-- 顶部导航 -->
+        <header class="quiz-header">
+            <button class="btn btn-back" onclick="window.location.href='/'">← 返回</button>
+            <h1 class="quiz-title" id="quizTitle">加载中...</h1>
+            <div class="quiz-progress">
+                <span id="currentNum">0</span> / <span id="totalNum">0</span>
+            </div>
+        </header>
+
+        <!-- 进度条 -->
+        <div class="quiz-progress-bar">
+            <div class="quiz-progress-fill" id="progressFill"></div>
+        </div>
+
+        <!-- 题目区域 -->
+        <div class="question-card card" id="questionCard">
+            <div class="question-meta">
+                <span class="question-type" id="questionType">单选题</span>
+                <span class="question-number" id="questionNumber">第 1 题</span>
+            </div>
+            
+            <div class="question-stem" id="questionStem">
+                加载中...
+            </div>
+
+            <div class="options-list" id="optionsList">
+                <!-- 选项动态生成 -->
+            </div>
+
+            <!-- 答题结果反馈 -->
+            <div class="result-feedback" id="resultFeedback" style="display:none;">
+                <div class="result-icon" id="resultIcon">✓</div>
+                <div class="result-text" id="resultText">回答正确！</div>
+            </div>
+
+            <!-- 解析区域 -->
+            <div class="explanation-section" id="explanationSection" style="display:none;">
+                <div class="explanation-header">
+                    <span>📝 答案解析</span>
+                    <button class="btn btn-small" id="genExplanationBtn" style="display:none;">AI生成解析</button>
+                </div>
+                <div class="explanation-content" id="explanationContent">
+                    暂无解析
+                </div>
+            </div>
+        </div>
+
+        <!-- 底部操作 -->
+        <div class="quiz-footer">
+            <button class="btn btn-secondary" id="prevBtn" disabled>上一题</button>
+            <button class="btn btn-primary" id="nextBtn" disabled>下一题</button>
+        </div>
+
+        <!-- 完成弹窗 -->
+        <div class="modal-overlay" id="completeModal" style="display:none;">
+            <div class="modal-card">
+                <div class="modal-icon">🎉</div>
+                <h2>答题完成！</h2>
+                <div class="score-display">
+                    <span class="score-num" id="scoreNum">0</span>
+                    <span class="score-label">分</span>
+                </div>
+                <p class="score-detail">
+                    共 <span id="totalQuestions">0</span> 题，
+                    正确 <span id="correctCount">0</span> 题，
+                    错误 <span id="wrongCount">0</span> 题
+                </p>
+                <div class="modal-actions">
+                    <button class="btn btn-secondary" onclick="window.location.href='/'">返回首页</button>
+                    <button class="btn btn-primary" id="restartBtn">重新答题</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 将quiz_id传入JS
+        window.QUIZ_ID = "{{ quiz_id }}";
+    </script>
+    <script src="/static/quiz.js"></script>
+</body>
+</html>

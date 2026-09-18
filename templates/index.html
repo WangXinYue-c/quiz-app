@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>刷题神器 - 上传题库自动刷题</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="header-row">
+                <h1>📚 刷题神器</h1>
+                <button class="btn btn-secondary btn-small" id="settingsBtn" title="AI配置">⚙️ 设置</button>
+            </div>
+            <p class="subtitle">上传 PDF / Word / TXT 题库，一键生成可刷题的试卷</p>
+        </header>
+
+        <!-- AI配置弹窗 -->
+        <div class="modal-overlay" id="settingsModal" style="display:none;">
+            <div class="modal-card settings-modal">
+                <div class="modal-header">
+                    <h2>⚙️ AI 配置</h2>
+                    <button class="btn btn-back" id="closeSettingsBtn">✕</button>
+                </div>
+                <div class="settings-body">
+                    <p class="settings-tip">配置AI大模型的API，用于题目解析和答案解析生成。支持任何兼容OpenAI格式的API。</p>
+                    
+                    <div class="settings-field">
+                        <label>API Key</label>
+                        <input type="password" id="settingsApiKey" placeholder="sk-xxxxxxxxxxxxx">
+                        <span class="settings-hint" id="settingsKeyHint"></span>
+                    </div>
+                    
+                    <div class="settings-field">
+                        <label>API 地址 (Base URL)</label>
+                        <input type="text" id="settingsBaseUrl" placeholder="https://api.deepseek.com/v1">
+                        <span class="settings-hint">DeepSeek: https://api.deepseek.com/v1<br>OpenAI: https://api.openai.com/v1<br>通义千问: https://dashscope.aliyuncs.com/compatible-mode/v1</span>
+                    </div>
+                    
+                    <div class="settings-field">
+                        <label>模型名称</label>
+                        <input type="text" id="settingsModel" placeholder="deepseek-chat">
+                        <span class="settings-hint">DeepSeek: deepseek-chat<br>OpenAI: gpt-4o-mini<br>通义千问: qwen-plus</span>
+                    </div>
+                    
+                    <div class="settings-presets">
+                        <span class="preset-label">快捷预设：</span>
+                        <button class="btn btn-small btn-preset" data-preset="deepseek">DeepSeek</button>
+                        <button class="btn btn-small btn-preset" data-preset="openai">OpenAI</button>
+                        <button class="btn btn-small btn-preset" data-preset="qwen">通义千问</button>
+                        <button class="btn btn-small btn-preset" data-preset="kimi">Kimi</button>
+                    </div>
+                    
+                    <button class="btn btn-primary btn-full" id="saveSettingsBtn">保存配置</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 上传区域 -->
+        <section class="upload-section card">
+            <h2>📤 上传题库</h2>
+            <div class="upload-area" id="uploadArea">
+                <div class="upload-icon">📁</div>
+                <p class="upload-text">点击或拖拽文件到此处上传</p>
+                <p class="upload-hint">支持 PDF、Word (.docx)、TXT 文字版文件</p>
+                <input type="file" id="fileInput" accept=".pdf,.docx,.doc,.txt" hidden>
+            </div>
+            
+            <div class="upload-options" id="uploadOptions" style="display:none;">
+                <div class="file-info">
+                    <span id="selectedFileName"></span>
+                    <button class="btn btn-small" id="changeFileBtn">更换</button>
+                </div>
+                <div class="title-input">
+                    <label>试卷名称（可选）</label>
+                    <input type="text" id="quizTitle" placeholder="留空则使用文件名">
+                </div>
+                <button class="btn btn-primary btn-full" id="uploadBtn">
+                    <span id="uploadBtnText">开始解析</span>
+                </button>
+            </div>
+
+            <!-- 进度条 -->
+            <div class="progress-container" id="progressContainer" style="display:none;">
+                <div class="progress-bar" id="progressBar"></div>
+                <p class="progress-text" id="progressText">正在上传...</p>
+            </div>
+
+            <!-- AI配置提示 -->
+            <div class="warning-box" id="aiWarning" style="display:none;">
+                ⚠️ 未检测到AI配置，上传解析功能需要API Key。请点击右上角 <strong>⚙️ 设置</strong> 按钮配置。
+            </div>
+        </section>
+
+        <!-- 试卷列表 -->
+        <section class="quiz-list-section card">
+            <div class="section-header">
+                <h2>📋 我的试卷</h2>
+                <span class="quiz-count" id="quizCount">0 套</span>
+            </div>
+            
+            <div class="quiz-list" id="quizList">
+                <div class="empty-state">
+                    <p>还没有试卷，上传一份题库开始吧！</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 上传记录 -->
+        <section class="file-list-section card">
+            <div class="section-header">
+                <h2>📄 上传记录</h2>
+                <button class="btn btn-small" id="refreshBtn">刷新</button>
+            </div>
+            
+            <div class="file-list" id="fileList">
+                <div class="empty-state">
+                    <p>暂无上传记录</p>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>
