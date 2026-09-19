@@ -143,7 +143,8 @@ def now_str():
 
 # ========== 文件解析 ==========
 def extract_text_from_pdf(filepath):
-    """从PDF提取文字"""
+    """从PDF提取文字，超过30000字截断"""
+    MAX_CHARS = 30000
     try:
         import pdfplumber
         text = ''
@@ -152,21 +153,19 @@ def extract_text_from_pdf(filepath):
                 page_text = page.extract_text()
                 if page_text:
                     text += page_text + '\n'
-                # 限制总文本长度，避免内存溢出
-                if len(text) > 50000:
-                    text = text[:50000]
+                if len(text) > MAX_CHARS:
+                    text = text[:MAX_CHARS]
                     break
         return text
     except ImportError:
-        # 备用方案：用PyPDF2
         try:
             from PyPDF2 import PdfReader
             reader = PdfReader(filepath)
             text = ''
             for page in reader.pages:
                 text += page.extract_text() + '\n'
-                if len(text) > 50000:
-                    text = text[:50000]
+                if len(text) > MAX_CHARS:
+                    text = text[:MAX_CHARS]
                     break
             return text
         except ImportError:
@@ -180,12 +179,17 @@ def extract_text_from_docx(filepath):
         text = ''
         for para in doc.paragraphs:
             text += para.text + '\n'
-        # 提取表格中的文字
+            if len(text) > 30000:
+                text = text[:30000]
+                break
         for table in doc.tables:
             for row in table.rows:
                 for cell in row.cells:
                     text += cell.text + '\t'
                 text += '\n'
+            if len(text) > 30000:
+                text = text[:30000]
+                break
         return text
     except ImportError:
         raise Exception('未安装Word解析库，请运行 pip install python-docx')
@@ -196,7 +200,10 @@ def extract_text_from_txt(filepath):
     for enc in encodings:
         try:
             with open(filepath, 'r', encoding=enc) as f:
-                return f.read()
+                text = f.read()
+                if len(text) > 30000:
+                    text = text[:30000]
+                return text
         except UnicodeDecodeError:
             continue
     raise Exception('无法识别文件编码')
@@ -363,11 +370,12 @@ def upload_file():
         # 1. 提取文字
         print(f'开始解析文件: {filename}')
         text = extract_text(save_path, ext)
-        print(f'提取文字完成，共 {len(text)} 字符')
-        
+        text_truncated = len(text) >= 30000
+        print(f'提取文字完成，共 {len(text)} 字符{"（已截断）" if text_truncated else ""}')
+
         if len(text) < 50:
             raise Exception('提取的文字内容太少，可能是扫描版PDF（暂不支持）或文件内容为空')
-        
+
         # 2. AI解析题目
         print('开始AI解析题目...')
         questions = parse_questions_with_ai(text, filename)
@@ -405,7 +413,8 @@ def upload_file():
             'success': True,
             'quiz_id': quiz_id,
             'title': quiz_title,
-            'question_count': len(questions)
+            'question_count': len(questions),
+            'partial': text_truncated
         })
         
     except Exception as e:

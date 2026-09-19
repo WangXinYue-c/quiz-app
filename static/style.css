@@ -775,6 +775,13 @@ body {
     background: #e8f4ff;
 }
 
+/* ========== 上传警告 ========== */
+.upload-warning {
+    font-size: 12px;
+    color: #e65100;
+    margin-top: 4px;
+}
+
 /* ========== 模式切换 + 工具栏 ========== */
 .quiz-toolbar {
     display: flex;

@@ -247,7 +247,11 @@ function uploadFile() {
     })
     .then(data => {
         if (data.success) {
-            progressText.textContent = `解析完成！共 ${data.question_count} 道题`;
+            if (data.partial) {
+                progressText.textContent = `解析完成！共 ${data.question_count} 道题（文件较大，仅解析了前3万字内容）`;
+            } else {
+                progressText.textContent = `解析完成！共 ${data.question_count} 道题`;
+            }
             uploadBtnText.textContent = '开始刷题';
             uploadBtn.onclick = () => {
                 window.location.href = `/quiz/${data.quiz_id}`;
